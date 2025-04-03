@@ -26,8 +26,8 @@ const config: ForgeConfig = {
       name: "@electron-forge/publisher-github",
       config: {
         repository: {
-          owner: "BibliothecaDAO",
-          name: "eternum",
+          owner: "edisontim",
+          name: "eternum-loader",
         },
         prerelease: false,
       },

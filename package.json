@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/BibliothecaDAO/eternum.git"
+    "url": "https://github.com/edisontim/eternum-loader.git"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
