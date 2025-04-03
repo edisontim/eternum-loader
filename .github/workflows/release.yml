@@ -1,4 +1,4 @@
-name: Release torii-launcher
+name: Release
 
 permissions:
   contents: write
@@ -19,9 +19,6 @@ jobs:
             { name: "macos", image: "macos-latest" },
           ]
     runs-on: ${{ matrix.os.image }}
-    defaults:
-      run:
-        working-directory: ./client/apps/torii-launcher
     steps:
       - name: Github checkout
         uses: actions/checkout@v4
