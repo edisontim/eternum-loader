@@ -6,7 +6,7 @@ Eternum loader is an app that uses a local Torii instance to download Eternum's 
 
 ### Easy way
 
-The easiest way to install is via [the game](https://eternum.realms.world).
+The easiest way to install is via the settings directly in [the game](https://eternum.realms.world).
 
 There's no configuration, simply launch the app and select the chain you want to sync.
 
