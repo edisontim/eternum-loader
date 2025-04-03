@@ -101,6 +101,7 @@ const createWindow = () => {
       nodeIntegration: true,
       contextIsolation: true,
       partition: "persist:eternum-loader",
+      devTools: !app.isPackaged,
     },
     resizable: false,
     center: true,
