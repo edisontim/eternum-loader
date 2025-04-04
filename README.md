@@ -14,6 +14,10 @@ There's no configuration, simply launch the app and select the chain you want to
 
 `npm i && npm start`
 
+## Updating
+
+This app supports auto-updating. This means the user only needs to download the Eternum Loader once and will be prompted to update everytime a new release is up. To release a new version of the app, change the version in the [`package.json`](./package.json) file and then run the manual CI action `release`, this will create a draft release, you just need to publish the release on Github and that's it!
+
 ## Important notice
 
 To work correctly this app pulls the following files from the Github repo from the `next` branch. That requires that the
