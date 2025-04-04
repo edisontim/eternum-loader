@@ -1,7 +1,7 @@
 {
   "name": "eternum-loader",
   "type": "commonjs",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Loader for Eternum",
   "main": ".vite/build/main.js",
   "scripts": {
