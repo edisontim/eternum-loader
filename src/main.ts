@@ -66,7 +66,11 @@ const SYNC_INTERVAL = 4000;
 let toriiVersion: string | null = null;
 
 app.whenReady().then(() => {
-  tray = new Tray(path.join(__dirname, "tray-icon@2x.png"));
+  if (process.platform === "darwin") {
+    tray = new Tray(path.join(__dirname, "tray-icon@2x.png"));
+  } else {
+    tray = new Tray(path.join(__dirname, "tray-icon.png"));
+  }
 
   const contextMenu = Menu.buildFromTemplate([
     {
