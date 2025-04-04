@@ -8,7 +8,7 @@ const config: ForgeConfig = {
     asar: false,
     executableName: "eternum-loader",
     name: "Eternum Loader",
-    icon: "./public/icon.icns",
+    icon: "./public/icon",
     osxSign: {
       optionsForFile: (filePath) => {
         // Here, we keep it simple and return a single entitlements.plist file.
