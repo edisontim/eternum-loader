@@ -1,11 +1,12 @@
 import { CONFIG_TYPES, IpcMethod } from "../../types";
+import { ButtonLike } from "../components/button-like";
 import { Dropdown } from "../components/dropdown";
 import { ProgressLogo } from "../components/progress-logo";
 import { useAppContext } from "../context";
 import { capitalize } from "../utils";
 
 export const SyncingPage = () => {
-  const { currentConfig, progress } = useAppContext();
+  const { currentConfig, progress, setReset } = useAppContext();
   const { setShowWarning } = useAppContext();
 
   return (
@@ -14,10 +15,10 @@ export const SyncingPage = () => {
       <div className="flex flex-col justify-center items-center gap-[10px]">
         <div className="text-white text-base uppercase font-bold no-select">{`Eternum (${currentConfig?.configType}) is ${progress === 100 ? "synced" : "syncing"}`}</div>
       </div>
-      <div className="w-fit h-fit flex flex-col gap-2">
+      <div className="w-fit h-fit flex flex-row gap-2">
         <Dropdown
           options={CONFIG_TYPES.filter(
-            (config) => config !== currentConfig?.configType,
+            (config) => config !== currentConfig?.configType
           ).map((config) => capitalize(config))}
           label={capitalize(currentConfig?.configType ?? CONFIG_TYPES[0])}
           selectCallback={(option: string) => {
@@ -26,7 +27,7 @@ export const SyncingPage = () => {
                 console.log(`Setting config to: ${option}`);
                 window.electronAPI.sendMessage(
                   IpcMethod.ChangeConfigType,
-                  option.toLowerCase(),
+                  option.toLowerCase()
                 );
               },
               name: "switch chain",
@@ -34,6 +35,15 @@ export const SyncingPage = () => {
             });
           }}
         />
+        <ButtonLike
+          onClick={() => {
+            window.electronAPI.sendMessage(IpcMethod.KillTorii);
+            setReset(true);
+          }}
+          className="bg-deepRed hover:bg-deepRed/20"
+        >
+          <div>Restart</div>
+        </ButtonLike>
       </div>
     </div>
   );

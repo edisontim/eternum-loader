@@ -7,9 +7,10 @@ import cover06 from "@public/covers/06.png";
 import cover07 from "@public/covers/07.png";
 
 // import Refresh from "@public/icons/refresh.svg?react";
-import { useEffect, useMemo } from "react";
+import { IpcRendererEvent } from "electron";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import { ToriiConfig } from "../types";
+import { IpcMethod, ToriiConfig } from "../types";
 import { DeleteButton } from "./components/delete";
 import { Logs } from "./components/logs";
 import { Warning } from "./components/warning";
@@ -38,6 +39,7 @@ const ClickableArea = styled.div`
 export const LoaderApp = () => {
   const { setCurrentConfig, page, progress, reset, setProgress, setReset } =
     useAppContext();
+  const [version, setVersion] = useState<string | null>(null);
 
   useProgress();
 
@@ -58,7 +60,18 @@ export const LoaderApp = () => {
       (config: ToriiConfig) => {
         console.log("config changed", config);
         setCurrentConfig(config);
-      },
+      }
+    );
+    return () => {
+      removeListener();
+    };
+  }, []);
+  useEffect(() => {
+    const removeListener = window.electronAPI.on(
+      IpcMethod.VersionNotification,
+      (event: IpcRendererEvent, version: string) => {
+        setVersion(version);
+      }
     );
     return () => {
       removeListener();
@@ -74,7 +87,10 @@ export const LoaderApp = () => {
       />
       <div className="relative top-0 left-0 right-0 bottom-0 w-[100vw] h-[100vh] overflow-hidden flex flex-col justify-center items-center z-20">
         <DraggableArea className="h-fit flex flex-row justify-between items-center">
-          <div className="text-white text-xs">Eternum Launcher</div>
+          <div className="flex flex-row h-full w-fit gap-2">
+            <div className="text-white text-xs">Eternum Loader</div>
+            {version && <div className="text-white/40 text-xs">v{version}</div>}
+          </div>
           {page === Page.Syncing && (
             <ClickableArea className="flex flex-row gap-4 items-center justify-center">
               <DeleteButton />
@@ -100,9 +116,6 @@ export const LoaderApp = () => {
     </>
   );
 };
-
-const killToriiAlertMessage =
-  "Careful, if you are in the process of syncing, this could cause issues with the data";
 
 export const getRandomBackgroundImage = () => {
   const timestamp = Math.floor(Date.now() / 1000);

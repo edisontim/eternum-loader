@@ -32,6 +32,10 @@ const config: ForgeConfig = {
   ],
   makers: [
     {
+      name: "@electron-forge/maker-zip",
+      config: {},
+    },
+    {
       name: "@electron-forge/maker-squirrel",
       config: {},
     },

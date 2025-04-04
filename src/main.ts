@@ -16,6 +16,7 @@ import hasbin from "hasbin";
 import path from "path";
 import { RpcProvider } from "starknet";
 import { updateElectronApp } from "update-electron-app";
+import packageJson from "../package.json";
 import { APP_PATH, DOJO_PATH } from "./constants";
 import {
   ConfigType,
@@ -133,6 +134,7 @@ const runApp = async () => {
   await timeout(2000);
 
   window?.webContents.send(IpcMethod.ConfigWasChanged, config);
+  window?.webContents.send(IpcMethod.VersionNotification, packageJson.version);
 };
 
 app.on("quit", () => {

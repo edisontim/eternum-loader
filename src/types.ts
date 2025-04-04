@@ -6,6 +6,7 @@ export enum IpcMethod {
   Notification = "notification",
   ConfigWasChanged = "config-was-changed",
   ProgressUpdate = "progress-update",
+  VersionNotification = "version-notification",
 }
 
 export enum NotificationType {

@@ -3,7 +3,7 @@ import {
   Notification,
   ProgressUpdatePayload,
   ToriiConfig,
-} from "./types"; // Added ProgressUpdatePayload import
+} from "../types";
 
 declare global {
   interface Window {
@@ -16,15 +16,15 @@ export interface ElectronAPI {
   invoke: <T>(channel: IpcMethod, data?: unknown) => Promise<T>;
   on: (
     channel: IpcMethod,
-    func: (event: Electron.IpcRendererEvent, ...args: any[]) => void,
+    func: (event: Electron.IpcRendererEvent, ...args: any[]) => void
   ) => () => void; // Added return type based on preload.ts implementation
   // Specific listeners
   onNotification: (
-    callback: (notification: Notification) => void,
+    callback: (notification: Notification) => void
   ) => () => void; // Added return type
   onConfigChanged: (callback: (config: ToriiConfig) => void) => () => void; // Added return type
   // Add the definition for onProgressUpdate
   onProgressUpdate: (
-    callback: (payload: ProgressUpdatePayload) => void,
+    callback: (payload: ProgressUpdatePayload) => void
   ) => () => void;
 }
