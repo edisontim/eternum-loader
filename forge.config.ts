@@ -11,9 +11,6 @@ const config: ForgeConfig = {
     icon: "./public/icon",
     osxSign: {
       optionsForFile: (filePath) => {
-        // Here, we keep it simple and return a single entitlements.plist file.
-        // You can use this callback to map different sets of entitlements
-        // to specific files in your packaged app.
         return {
           entitlements: "./entitlements.plist",
         };
@@ -42,7 +39,7 @@ const config: ForgeConfig = {
       name: "@electron-forge/maker-dmg",
       config: {
         format: "ULFO",
-        icon: "./public/icon.png",
+        icon: "./public/macos-icon.png",
         name: "Eternum Loader",
       },
     },

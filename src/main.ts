@@ -46,7 +46,7 @@ if (started) {
 }
 
 if (app.dock && process.platform === "darwin") {
-  app.dock.setIcon(path.join(__dirname, "icon.png"));
+  app.dock.setIcon(path.join(__dirname, "macos-icon.png"));
 }
 
 let child: ChildProcessWithoutNullStreams | null = null;
@@ -112,7 +112,7 @@ const createWindow = () => {
     title: "Eternum Loader",
     icon:
       process.platform === "darwin"
-        ? path.join(__dirname, "icon.png")
+        ? path.join(__dirname, "macos-icon.png")
         : path.join(__dirname, "icon.ico"),
     frame: false,
   });
