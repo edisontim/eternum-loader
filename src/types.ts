@@ -21,7 +21,7 @@ export type Notification = {
 };
 
 // Define the possible config types as a constant array
-export const CONFIG_TYPES = ["mainnet", "sepolia", "slot", "local"] as const;
+export const CONFIG_TYPES = ["mainnet", "sepolia", "slot"] as const;
 
 // Derive the ConfigType union type from the array
 export type ConfigType = (typeof CONFIG_TYPES)[number];
