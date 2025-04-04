@@ -110,7 +110,10 @@ const createWindow = () => {
     resizable: false,
     center: true,
     title: "Eternum Loader",
-    icon: path.join(__dirname, "icon.png"),
+    icon:
+      process.platform === "darwin"
+        ? path.join(__dirname, "icon.png")
+        : path.join(__dirname, "icon.ico"),
     frame: false,
   });
 
