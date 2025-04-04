@@ -13,6 +13,7 @@ jobs:
         os:
           [
             { name: "linux", image: "ubuntu-latest" },
+            { name: "linux-arm64", image: "ubuntu-24.04-arm" },
             { name: "windows", image: "windows-latest" },
             # { name: "macos", image: "macos-latest" },
             # { name: "macos-intel", image: "macos-13" },
