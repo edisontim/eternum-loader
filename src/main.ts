@@ -110,10 +110,6 @@ const createWindow = () => {
     resizable: false,
     center: true,
     title: "Eternum Loader",
-    icon:
-      process.platform === "darwin"
-        ? path.join(__dirname, "macos-icon.png")
-        : path.join(__dirname, "icon.ico"),
     frame: false,
   });
 
