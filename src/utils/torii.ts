@@ -1,7 +1,7 @@
 import { ConfigType } from "../types";
 
 const ETERNUM_GITHUB_RAW_CONTENT_GAME_CONTRACTS_URL =
-  "https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/feat/torii-launcher-windows/contracts/game/";
+  "https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/next/contracts/game/";
 
 export const getToriiVersion = async () => {
   const response = await fetch(
