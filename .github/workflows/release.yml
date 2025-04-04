@@ -1,4 +1,4 @@
-name: Release
+name: release
 
 permissions:
   contents: write
@@ -17,6 +17,7 @@ jobs:
             # { name: "macos", image: "macos-latest" },
             # { name: "macos-intel", image: "macos-13" },
           ]
+
     runs-on: ${{ matrix.os.image }}
     steps:
       - name: Github checkout
