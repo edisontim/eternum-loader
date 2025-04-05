@@ -37,8 +37,14 @@ export const SyncingPage = () => {
         />
         <ButtonLike
           onClick={() => {
-            window.electronAPI.sendMessage(IpcMethod.KillTorii);
-            setReset(true);
+            setShowWarning({
+              callback: () => {
+                window.electronAPI.sendMessage(IpcMethod.KillTorii);
+                setReset(true);
+              },
+              name: "restart",
+              alertMessage: restartAlertMessage,
+            });
           }}
           className="bg-deepRed hover:bg-deepRed/20"
         >
@@ -51,3 +57,5 @@ export const SyncingPage = () => {
 
 const changeConfigTypeAlertMessage =
   "This might corrupt the data of the current chain if you're still syncing.";
+
+const restartAlertMessage = "This might corrupt the synced data.";

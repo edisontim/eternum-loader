@@ -158,26 +158,34 @@ app.on("activate", () => {
 });
 
 ipcMain.on(IpcMethod.StartTorii, async (event, arg) => {
-  if (child) {
+  try {
+    if (child) {
+      sendNotification({
+        type: NotificationType.Error,
+        message: "Torii is already running",
+        timestampMs: Date.now(),
+      });
+      return;
+    }
+
+    await saveConfigType(arg);
+    config = await loadConfig();
+    initialToriiBlock = await readFirstBlock();
+
     sendNotification({
-      type: NotificationType.Error,
-      message: "Torii is already running",
+      type: NotificationType.Info,
+      message: "Starting Torii",
       timestampMs: Date.now(),
     });
-    return;
+    window?.webContents.send(IpcMethod.ConfigWasChanged, config);
+    handleTorii(toriiVersion);
+  } catch (e) {
+    sendNotification({
+      type: NotificationType.Error,
+      message: "Failed to start Torii: " + e,
+      timestampMs: Date.now(),
+    });
   }
-
-  await saveConfigType(arg);
-  config = await loadConfig();
-  initialToriiBlock = await readFirstBlock();
-
-  sendNotification({
-    type: NotificationType.Info,
-    message: "Starting Torii",
-    timestampMs: Date.now(),
-  });
-  window?.webContents.send(IpcMethod.ConfigWasChanged, config);
-  handleTorii(toriiVersion);
 });
 
 ipcMain.on(IpcMethod.KillTorii, (event, arg) => {
