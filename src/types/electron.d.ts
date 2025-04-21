@@ -16,15 +16,13 @@ export interface ElectronAPI {
   invoke: <T>(channel: IpcMethod, data?: unknown) => Promise<T>;
   on: (
     channel: IpcMethod,
-    func: (event: Electron.IpcRendererEvent, ...args: any[]) => void
-  ) => () => void; // Added return type based on preload.ts implementation
-  // Specific listeners
+    func: (event: Electron.IpcRendererEvent, ...args: any[]) => void,
+  ) => () => void;
   onNotification: (
-    callback: (notification: Notification) => void
-  ) => () => void; // Added return type
-  onConfigChanged: (callback: (config: ToriiConfig) => void) => () => void; // Added return type
-  // Add the definition for onProgressUpdate
+    callback: (notification: Notification) => void,
+  ) => () => void;
+  onConfigChanged: (callback: (config: ToriiConfig) => void) => () => void;
   onProgressUpdate: (
-    callback: (payload: ProgressUpdatePayload) => void
+    callback: (payload: ProgressUpdatePayload) => void,
   ) => () => void;
 }

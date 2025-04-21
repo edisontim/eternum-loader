@@ -18,7 +18,7 @@ export const SyncingPage = () => {
       <div className="w-fit h-fit flex flex-row gap-2">
         <Dropdown
           options={CONFIG_TYPES.filter(
-            (config) => config !== currentConfig?.configType
+            (config) => config !== currentConfig?.configType,
           ).map((config) => capitalize(config))}
           label={capitalize(currentConfig?.configType ?? CONFIG_TYPES[0])}
           selectCallback={(option: string) => {
@@ -27,7 +27,7 @@ export const SyncingPage = () => {
                 console.log(`Setting config to: ${option}`);
                 window.electronAPI.sendMessage(
                   IpcMethod.ChangeConfigType,
-                  option.toLowerCase()
+                  option.toLowerCase(),
                 );
               },
               name: "switch chain",

@@ -5,12 +5,12 @@ const ETERNUM_GITHUB_RAW_CONTENT_GAME_CONTRACTS_URL =
 
 export const getToriiVersion = async () => {
   const response = await fetch(
-    `${ETERNUM_GITHUB_RAW_CONTENT_GAME_CONTRACTS_URL}Scarb.toml`
+    `${ETERNUM_GITHUB_RAW_CONTENT_GAME_CONTRACTS_URL}Scarb.toml`,
   );
   const data = await response.text();
 
   const dojoTagMatch = data.match(
-    /dojo\s*=\s*{\s*git\s*=\s*"[^"]+"\s*,\s*tag\s*=\s*"([^"]+)"\s*}/
+    /dojo\s*=\s*{\s*git\s*=\s*"[^"]+"\s*,\s*tag\s*=\s*"([^"]+)"\s*}/,
   );
   const dojoTag = dojoTagMatch ? dojoTagMatch[1] : undefined;
 
@@ -20,7 +20,7 @@ export const getToriiVersion = async () => {
 
 export const getToriiConfig = async (configType: ConfigType) => {
   const response = await fetch(
-    `${ETERNUM_GITHUB_RAW_CONTENT_GAME_CONTRACTS_URL}torii-${configType}.toml`
+    `${ETERNUM_GITHUB_RAW_CONTENT_GAME_CONTRACTS_URL}torii-${configType}.toml`,
   );
 
   const data = await response.text();

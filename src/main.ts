@@ -125,7 +125,7 @@ const createWindow = () => {
     window?.webContents.send(IpcMethod.ConfigWasChanged, config);
     window?.webContents.send(
       IpcMethod.VersionNotification,
-      packageJson.version
+      packageJson.version,
     );
     window.webContents.send(IpcMethod.ProgressUpdate, {
       progress: calculateProgress(),
@@ -139,7 +139,7 @@ const createWindow = () => {
     window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
     window.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     );
   }
   return window;
@@ -287,7 +287,7 @@ async function handleTorii(toriiVersion: string) {
 
       if (!fs.existsSync(toriiPath)) {
         throw new Error(
-          `Torii executable not found at expected path: ${toriiPath}`
+          `Torii executable not found at expected path: ${toriiPath}`,
         );
       }
     } catch (error) {
@@ -321,7 +321,7 @@ async function handleTorii(toriiVersion: string) {
       mkdirSync(dbPath, { recursive: true });
 
       normalLog(
-        `Launching torii with params:\n- network ${config.configType}\n- rpc ${config.rpc}\n- world address ${config.world_address}\n- db ${dbPath}\n- config ${toriiTomlPath}`
+        `Launching torii with params:\n- network ${config.configType}\n- rpc ${config.rpc}\n- world address ${config.world_address}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
       );
 
       startSyncLoop();
@@ -342,7 +342,7 @@ async function handleTorii(toriiVersion: string) {
         {
           detached: true,
           stdio: ["ignore", "pipe", "pipe"],
-        }
+        },
       );
 
       child.stdout.on("data", (data: Buffer) => {
@@ -363,7 +363,7 @@ async function handleTorii(toriiVersion: string) {
       await new Promise<void>((resolve) => {
         child?.on("exit", (code, signal) => {
           errorLog(
-            `Torii process exited with code ${code} and signal ${signal}`
+            `Torii process exited with code ${code} and signal ${signal}`,
           );
           resolve();
         });
@@ -437,7 +437,7 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
         : "Unknown error";
       errorLog(`Windows download failed: ${errorMsg}`);
       throw new Error(
-        `Download failed with code ${result.status}: ${errorMsg}`
+        `Download failed with code ${result.status}: ${errorMsg}`,
       );
     }
 
@@ -455,7 +455,7 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
         : "Unknown error";
       errorLog(`Windows extraction failed: ${errorMsg}`);
       throw new Error(
-        `Extraction failed with code ${extractResult.status}: ${errorMsg}`
+        `Extraction failed with code ${extractResult.status}: ${errorMsg}`,
       );
     }
 
@@ -473,7 +473,7 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
         : "Unknown error";
       errorLog(`Unix installation failed: ${errorMsg}`);
       throw new Error(
-        `Unix installation failed with code ${result.status}: ${errorMsg}`
+        `Unix installation failed with code ${result.status}: ${errorMsg}`,
       );
     }
   }
@@ -521,7 +521,7 @@ function killTorii() {
 
 async function resetFirstBlock(
   firstBlock: number | null,
-  force: boolean = false
+  force: boolean = false,
 ) {
   const stateFilePath = getStateFilePath(config.configType);
   const state = await fsPromises.readFile(stateFilePath, "utf8");
@@ -530,7 +530,7 @@ async function resetFirstBlock(
     stateJson.firstBlock = firstBlock;
     fs.writeFileSync(
       getStateFilePath(config.configType),
-      JSON.stringify(stateJson)
+      JSON.stringify(stateJson),
     );
   }
   initialToriiBlock = firstBlock;
@@ -544,7 +544,7 @@ async function readFirstBlock() {
     warningLog("State file does not exist, creating...");
     await fsPromises.writeFile(
       stateFilePath,
-      JSON.stringify({ firstBlock: null })
+      JSON.stringify({ firstBlock: null }),
     );
   }
 
@@ -562,7 +562,7 @@ async function sendNotification(notification: Notification) {
 }
 
 const getChainCurrentBlock = async (
-  currentConfig: ToriiConfig
+  currentConfig: ToriiConfig,
 ): Promise<number> => {
   if (!currentConfig?.rpc) {
     warningLog("RPC config not available for fetching chain block.");

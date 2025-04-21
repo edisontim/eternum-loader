@@ -10,8 +10,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os:
-          [
+        os: [
             { name: "linux", image: "ubuntu-latest" },
             { name: "linux-arm64", image: "ubuntu-24.04-arm" },
             { name: "windows", image: "windows-latest" },
