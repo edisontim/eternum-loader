@@ -3,6 +3,7 @@ import { ToriiConfig } from "../types";
 import { WarningType } from "./types";
 
 export enum Page {
+  Loading,
   Start,
   Syncing,
 }
@@ -24,13 +25,13 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function Provider({ children }: { children: ReactNode }) {
   const [currentConfig, setCurrentConfig] = useState<ToriiConfig | null>(null);
   const [reset, setReset] = useState(false);
   const [showWarning, setShowWarning] = useState<WarningType | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [page, setPage] = useState(Page.Start);
+  const [page, setPage] = useState(Page.Loading);
 
   const value = {
     currentConfig,
@@ -53,7 +54,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 export function useAppContext() {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error("useAppContext must be used within an AppProvider");
+    throw new Error("useAppContext must be used within an Provider");
   }
   return context;
 }

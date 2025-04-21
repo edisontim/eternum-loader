@@ -18,6 +18,7 @@ import { RpcProvider } from "starknet";
 import { updateElectronApp } from "update-electron-app";
 import packageJson from "../package.json";
 import { APP_PATH, DOJO_PATH } from "./constants";
+import { Page } from "./frontend/context";
 import {
   ConfigType,
   IpcMethod,
@@ -62,6 +63,7 @@ let initialToriiBlock: number | null = null;
 let currentToriiBlock: number = 0;
 let currentChainBlock: number = 0;
 let progressInterval: NodeJS.Timeout | null = null;
+let page = Page.Start;
 const SYNC_INTERVAL = 4000;
 
 let toriiVersion: string | null = null;
@@ -77,7 +79,7 @@ app.whenReady().then(() => {
     {
       label: "Open",
       type: "normal",
-      click: () => {
+      click: async () => {
         if (window && !window.isDestroyed()) {
           window.show();
           window.focus();
@@ -118,6 +120,21 @@ const createWindow = () => {
     window = null;
   });
 
+  window.on("ready-to-show", async () => {
+    window?.webContents.send(IpcMethod.PageNotification, page);
+    window?.webContents.send(IpcMethod.ConfigWasChanged, config);
+    window?.webContents.send(
+      IpcMethod.VersionNotification,
+      packageJson.version
+    );
+    window.webContents.send(IpcMethod.ProgressUpdate, {
+      progress: calculateProgress(),
+      initialToriiBlock,
+      currentToriiBlock,
+      currentChainBlock,
+    });
+  });
+
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
@@ -131,13 +148,9 @@ const createWindow = () => {
 const runApp = async () => {
   toriiVersion = await getToriiVersion();
   config = await loadConfig();
-  await timeout(2000);
-
-  window?.webContents.send(IpcMethod.ConfigWasChanged, config);
-  window?.webContents.send(IpcMethod.VersionNotification, packageJson.version);
 };
 
-app.on("quit", () => {
+app.on("before-quit", () => {
   killTorii();
 });
 
@@ -178,6 +191,7 @@ ipcMain.on(IpcMethod.StartTorii, async (event, arg) => {
       timestampMs: Date.now(),
     });
     window?.webContents.send(IpcMethod.ConfigWasChanged, config);
+    page = Page.Syncing;
     handleTorii(toriiVersion);
   } catch (e) {
     sendNotification({
@@ -383,7 +397,7 @@ async function handleTorii(toriiVersion: string) {
         }
       }
 
-      warningLog("Torii exited, waiting for 3s for ports to be released");
+      warningLog("Torii exited, waiting for 5s for ports to be released");
       await timeout(5000);
     } catch (error) {
       errorLog(`Error in handleTorii: ${error}`);
@@ -618,25 +632,8 @@ async function syncAndSendProgress() {
       }
     }
 
-    let progress = 0;
-    if (
-      initialToriiBlock !== null &&
-      currentChainBlock > 0 &&
-      currentChainBlock > initialToriiBlock
-    ) {
-      progress =
-        (currentToriiBlock - initialToriiBlock) /
-        (currentChainBlock - initialToriiBlock);
-      progress = Math.min(Math.max(progress, 0), 1);
-    } else if (
-      initialToriiBlock !== null &&
-      currentToriiBlock >= initialToriiBlock
-    ) {
-      progress = 1;
-    }
-
     const payload: ProgressUpdatePayload = {
-      progress,
+      progress: calculateProgress(),
       initialToriiBlock,
       currentToriiBlock,
       currentChainBlock,
@@ -649,6 +646,26 @@ async function syncAndSendProgress() {
     errorLog(`Error during sync/progress update: ${error}`);
   }
 }
+
+const calculateProgress = () => {
+  let progress = 0;
+  if (
+    initialToriiBlock !== null &&
+    currentChainBlock > 0 &&
+    currentChainBlock > initialToriiBlock
+  ) {
+    progress =
+      (currentToriiBlock - initialToriiBlock) /
+      (currentChainBlock - initialToriiBlock);
+    progress = Math.min(Math.max(progress, 0), 1);
+  } else if (
+    initialToriiBlock !== null &&
+    currentToriiBlock >= initialToriiBlock
+  ) {
+    progress = 1;
+  }
+  return progress;
+};
 
 function startSyncLoop() {
   if (progressInterval) {
@@ -676,6 +693,9 @@ app.on("browser-window-focus", function () {
   globalShortcut.register("CommandOrControl+R", () => {
     console.log("CommandOrControl+R is pressed: Shortcut Disabled");
   });
+  globalShortcut.register("CommandOrControl+Shift+R", () => {
+    console.log("CommandOrControl+Shift+R is pressed: Shortcut Disabled");
+  });
   globalShortcut.register("F5", () => {
     console.log("F5 is pressed: Shortcut Disabled");
   });
@@ -683,5 +703,6 @@ app.on("browser-window-focus", function () {
 
 app.on("browser-window-blur", function () {
   globalShortcut.unregister("CommandOrControl+R");
+  globalShortcut.unregister("CommandOrControl+Shift+R");
   globalShortcut.unregister("F5");
 });

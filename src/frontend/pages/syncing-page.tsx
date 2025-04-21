@@ -12,8 +12,8 @@ export const SyncingPage = () => {
   return (
     <div className="flex flex-col justify-center items-center gap-[10px]">
       <ProgressLogo />
-      <div className="flex flex-col justify-center items-center gap-[10px]">
-        <div className="text-white text-base uppercase font-bold no-select">{`Eternum (${currentConfig?.configType}) is ${progress === 100 ? "synced" : "syncing"}`}</div>
+      <div className="flex flex-col justify-center items-center gap-[10px] noselect">
+        <div className="text-white text-base uppercase font-bold noselect">{`Eternum (${currentConfig?.configType}) is ${progress === 100 ? "synced" : "syncing"}`}</div>
       </div>
       <div className="w-fit h-fit flex flex-row gap-2">
         <Dropdown

@@ -16,7 +16,6 @@ import { Logs } from "./components/logs";
 import { Warning } from "./components/warning";
 import { Page, useAppContext } from "./context";
 import { useProgress } from "./hooks/use-progress";
-import { ErrorPage } from "./pages/error-page";
 import { StartPage } from "./pages/start-page";
 import { SyncingPage } from "./pages/syncing-page";
 
@@ -37,8 +36,15 @@ const ClickableArea = styled.div`
 `;
 
 export const LoaderApp = () => {
-  const { setCurrentConfig, page, progress, reset, setProgress, setReset } =
-    useAppContext();
+  const {
+    setCurrentConfig,
+    page,
+    setPage,
+    progress,
+    reset,
+    setProgress,
+    setReset,
+  } = useAppContext();
   const [version, setVersion] = useState<string | null>(null);
 
   useProgress();
@@ -78,6 +84,18 @@ export const LoaderApp = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const removeListener = window.electronAPI.on(
+      IpcMethod.PageNotification,
+      (_: IpcRendererEvent, page: Page) => {
+        setPage(page);
+      }
+    );
+    return () => {
+      removeListener();
+    };
+  }, []);
+
   return (
     <>
       <img
@@ -107,7 +125,11 @@ export const LoaderApp = () => {
           ) : page === Page.Syncing ? (
             <SyncingPage />
           ) : (
-            <ErrorPage />
+            <img
+              className="w-[84px]"
+              src={"./public/eternum-loader.png"}
+              alt="Loading"
+            />
           )}
         </div>
         <Warning />
