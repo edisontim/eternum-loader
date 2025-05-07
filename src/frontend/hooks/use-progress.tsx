@@ -9,12 +9,8 @@ export const useProgress = () => {
     const removeListener = window.electronAPI.onProgressUpdate(
       (payload: ProgressUpdatePayload) => {
         if (!payload) return;
-        setProgress(
-          parseFloat(
-            Math.min(Math.max(payload.progress * 100, 0), 100).toFixed(2),
-          ),
-        );
-      },
+        setProgress(payload.progress);
+      }
     );
 
     return () => {

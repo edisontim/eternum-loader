@@ -1,0 +1,53 @@
+name: release
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [
+            { name: "macos", image: "macos-latest" },
+            { name: "macos-intel", image: "macos-13" },
+          ]
+    runs-on: ${{ matrix.os.image }}
+    steps:
+      - name: Github checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+      - name: Publish app
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          npm run make
+          echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+          security create-keychain -p any-password build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p any-password build.keychain
+          security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k any-password build.keychain
+          /usr/bin/codesign --force -s E428302DA8031C1EFA6E783B661BFAFCE30F3BD7 ./out/make/Eternum\ Loader.dmg -v
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dmg
+          path: |
+            ./out/make/Eternum\ Loader.zip
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dmg
+          path: |
+            ./out/make/Eternum\ Loader.dmg
+

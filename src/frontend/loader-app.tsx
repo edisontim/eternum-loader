@@ -66,7 +66,7 @@ export const LoaderApp = () => {
       (config: ToriiConfig) => {
         console.log("config changed", config);
         setCurrentConfig(config);
-      },
+      }
     );
     return () => {
       removeListener();
@@ -77,7 +77,7 @@ export const LoaderApp = () => {
       IpcMethod.VersionNotification,
       (event: IpcRendererEvent, version: string) => {
         setVersion(version);
-      },
+      }
     );
     return () => {
       removeListener();
@@ -89,13 +89,14 @@ export const LoaderApp = () => {
       IpcMethod.PageNotification,
       (_: IpcRendererEvent, page: Page) => {
         setPage(page);
-      },
+      }
     );
     return () => {
       removeListener();
     };
   }, []);
 
+  console.log("progress", progress);
   return (
     <>
       <img
@@ -112,9 +113,7 @@ export const LoaderApp = () => {
           {page === Page.Syncing && (
             <ClickableArea className="flex flex-row gap-4 items-center justify-center">
               <DeleteButton />
-              <div className="text-white text-xs select-none">
-                {Math.ceil(progress)}%
-              </div>
+              <div className="text-white text-xs select-none">{progress}%</div>
             </ClickableArea>
           )}
         </DraggableArea>

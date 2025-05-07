@@ -22,11 +22,10 @@ import { Page } from "./frontend/context";
 import {
   ConfigType,
   IpcMethod,
-  Notification,
-  NotificationType,
   ProgressUpdatePayload,
   ToriiConfig,
 } from "./types";
+import { sendErrorNotification, sendInfoNotification } from "./utils";
 import { loadConfig, saveConfigType } from "./utils/config";
 import {
   errorLog,
@@ -43,6 +42,25 @@ import { getToriiVersion } from "./utils/torii";
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
+let child: ChildProcessWithoutNullStreams | null = null;
+export let config: ToriiConfig | null = null;
+
+export let window: BrowserWindow | null = null;
+
+let tray: Tray | null = null;
+
+let initialToriiBlock: number | null = null;
+let currentToriiBlock: number = 0;
+let currentChainBlock: number = 0;
+
+let toriiVersion: string | null = null;
+
+let progressInterval: NodeJS.Timeout | null = null;
+
+let page = Page.Start;
+
+const SYNC_INTERVAL = 4000;
+
 if (started) {
   app.quit();
 }
@@ -51,113 +69,122 @@ if (app.dock && process.platform === "darwin") {
   app.dock.setIcon(path.join(__dirname, "macos-icon.png"));
 }
 
-let child: ChildProcessWithoutNullStreams | null = null;
-export let config: ToriiConfig | null = null;
-
 updateElectronApp();
 
-let window: BrowserWindow | null = null;
-
-let tray: Tray | null = null;
-let initialToriiBlock: number | null = null;
-let currentToriiBlock: number = 0;
-let currentChainBlock: number = 0;
-let progressInterval: NodeJS.Timeout | null = null;
-let page = Page.Start;
-const SYNC_INTERVAL = 4000;
-
-let toriiVersion: string | null = null;
-
 app.whenReady().then(() => {
-  if (process.platform === "darwin") {
-    tray = new Tray(path.join(__dirname, "tray-icon@2x.png"));
-  } else {
-    tray = new Tray(path.join(__dirname, "tray-icon.png"));
-  }
+  try {
+    if (process.platform === "darwin") {
+      tray = new Tray(path.join(__dirname, "tray-icon@2x.png"));
+    } else {
+      tray = new Tray(path.join(__dirname, "tray-icon.png"));
+    }
 
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: "Open",
-      type: "normal",
-      click: async () => {
-        if (window && !window.isDestroyed()) {
-          window.show();
-          window.focus();
-        } else {
-          createWindow();
-        }
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: "Open",
+        type: "normal",
+        click: async () => {
+          if (window && !window.isDestroyed()) {
+            window.show();
+            window.focus();
+          } else {
+            createWindow();
+          }
+        },
       },
-    },
-    { label: "Quit", type: "normal", click: () => app.quit() },
-  ]);
-  tray.setToolTip("Eternum Loader");
-  tray.setContextMenu(contextMenu);
+      { label: "Quit", type: "normal", click: () => app.quit() },
+    ]);
+    tray.setToolTip("Eternum Loader");
+    tray.setContextMenu(contextMenu);
+  } catch (error) {
+    sendErrorNotification(`Failed to create tray: ${error}`);
+  }
 });
 
 const createWindow = () => {
-  if (window && !window.isDestroyed()) {
-    window.focus();
-    return window;
-  }
+  try {
+    if (window && !window.isDestroyed()) {
+      window.focus();
+      return window;
+    }
 
-  window = new BrowserWindow({
-    width: 842,
-    height: 585,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      nodeIntegration: true,
-      contextIsolation: true,
-      partition: "persist:eternum-loader",
-      devTools: !app.isPackaged,
-    },
-    resizable: false,
-    center: true,
-    title: "Eternum Loader",
-    frame: false,
-  });
-
-  window.on("close", () => {
-    window = null;
-  });
-
-  window.on("ready-to-show", async () => {
-    window?.webContents.send(IpcMethod.PageNotification, page);
-    window?.webContents.send(IpcMethod.ConfigWasChanged, config);
-    window?.webContents.send(
-      IpcMethod.VersionNotification,
-      packageJson.version,
-    );
-    window.webContents.send(IpcMethod.ProgressUpdate, {
-      progress: calculateProgress(),
-      initialToriiBlock,
-      currentToriiBlock,
-      currentChainBlock,
+    window = new BrowserWindow({
+      width: 842,
+      height: 585,
+      webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
+        nodeIntegration: true,
+        contextIsolation: true,
+        partition: "persist:eternum-loader",
+        devTools: !app.isPackaged,
+      },
+      resizable: false,
+      center: true,
+      title: "Eternum Loader",
+      frame: false,
     });
-  });
 
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  } else {
-    window.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
+    window.on("close", () => {
+      window = null;
+    });
+
+    window.on("ready-to-show", async () => {
+      try {
+        window?.webContents.send(IpcMethod.PageNotification, page);
+        window?.webContents.send(IpcMethod.ConfigWasChanged, config);
+        window?.webContents.send(
+          IpcMethod.VersionNotification,
+          packageJson.version
+        );
+        window.webContents.send(IpcMethod.ProgressUpdate, {
+          progress: calculateProgress(),
+          initialToriiBlock,
+          currentToriiBlock,
+          currentChainBlock,
+        });
+      } catch (error) {
+        sendErrorNotification("Failed to send window ready event: " + error);
+      }
+    });
+
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+    } else {
+      window.loadFile(
+        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+      );
+    }
+    return window;
+  } catch (error) {
+    sendErrorNotification("Failed to create window: " + error);
   }
-  return window;
 };
 
 const runApp = async () => {
-  toriiVersion = await getToriiVersion();
-  config = await loadConfig();
+  try {
+    toriiVersion = await getToriiVersion();
+    config = await loadConfig();
+  } catch (error) {
+    sendErrorNotification("Failed to run app: " + error);
+  }
 };
 
 app.on("before-quit", () => {
-  killTorii();
+  try {
+    killTorii();
+  } catch (error) {
+    sendErrorNotification("Failed to kill Torii: " + error);
+  }
 });
 
 app.on("ready", () => {
-  createWindow();
+  try {
+    createWindow();
 
-  runApp();
+    runApp();
+  } catch (error) {
+    sendErrorNotification("Failed to run app: " + error);
+  }
 });
 
 app.on("window-all-closed", () => {
@@ -167,17 +194,17 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
-  createWindow();
+  try {
+    createWindow();
+  } catch (error) {
+    sendErrorNotification("Failed to create window: " + error);
+  }
 });
 
 ipcMain.on(IpcMethod.StartTorii, async (event, arg) => {
   try {
     if (child) {
-      sendNotification({
-        type: NotificationType.Error,
-        message: "Torii is already running",
-        timestampMs: Date.now(),
-      });
+      sendErrorNotification("Torii is already running");
       return;
     }
 
@@ -185,37 +212,21 @@ ipcMain.on(IpcMethod.StartTorii, async (event, arg) => {
     config = await loadConfig();
     initialToriiBlock = await readFirstBlock();
 
-    sendNotification({
-      type: NotificationType.Info,
-      message: "Starting Torii",
-      timestampMs: Date.now(),
-    });
+    sendInfoNotification(`Starting Torii (${toriiVersion})`);
     window?.webContents.send(IpcMethod.ConfigWasChanged, config);
     page = Page.Syncing;
     handleTorii(toriiVersion);
   } catch (e) {
-    sendNotification({
-      type: NotificationType.Error,
-      message: "Failed to start Torii: " + e,
-      timestampMs: Date.now(),
-    });
+    sendErrorNotification("Failed to start Torii: " + e);
   }
 });
 
 ipcMain.on(IpcMethod.KillTorii, (event, arg) => {
   try {
     killTorii();
-    sendNotification({
-      type: NotificationType.Info,
-      message: "Torii successfully killed",
-      timestampMs: Date.now(),
-    });
+    sendInfoNotification("Torii successfully killed");
   } catch (e) {
-    sendNotification({
-      type: NotificationType.Error,
-      message: "Failed to kill Torii: " + e,
-      timestampMs: Date.now(),
-    });
+    sendErrorNotification("Failed to kill Torii: " + e);
   }
 });
 
@@ -231,17 +242,9 @@ ipcMain.on(IpcMethod.ResetDatabase, async (event, arg) => {
 
     currentChainBlock = 0;
     currentToriiBlock = 0;
-    sendNotification({
-      type: NotificationType.Info,
-      message: "Database successfully reset",
-      timestampMs: Date.now(),
-    });
+    sendInfoNotification("Database successfully reset");
   } catch (e) {
-    sendNotification({
-      type: NotificationType.Error,
-      message: "Failed to reset database: " + e,
-      timestampMs: Date.now(),
-    });
+    sendErrorNotification("Failed to reset database: " + e);
   }
 });
 
@@ -259,58 +262,50 @@ ipcMain.on(IpcMethod.ChangeConfigType, async (event, arg: ConfigType) => {
     killTorii();
 
     window?.webContents.send(IpcMethod.ConfigWasChanged, config);
-    sendNotification({
-      type: NotificationType.Info,
-      message: "Config type successfully changed",
-      timestampMs: Date.now(),
-    });
+    sendInfoNotification("Config type successfully changed");
   } catch (e) {
-    sendNotification({
-      type: NotificationType.Error,
-      message: "Failed to change config type: " + e,
-      timestampMs: Date.now(),
-    });
+    sendErrorNotification("Failed to change config type: " + e);
   }
 });
 
 async function handleTorii(toriiVersion: string) {
-  const toriiExecutable = osUtils.getExecutableName("torii");
-  const toriiPath = path.join(DOJO_PATH, "bin", toriiExecutable);
+  let toriiPath: string;
 
-  const hasTorii = hasbin.sync(toriiExecutable) || fs.existsSync(toriiPath);
+  try {
+    const toriiExecutable = osUtils.getExecutableName("torii");
+    toriiPath = path.join(DOJO_PATH, "bin", toriiExecutable);
 
-  if (!hasTorii) {
-    normalLog("torii not found, installing");
-    try {
+    const hasTorii = hasbin.sync(toriiExecutable) || fs.existsSync(toriiPath);
+
+    if (!hasTorii) {
+      sendInfoNotification(
+        "Torii executable not found, installing to version " + toriiVersion
+      );
       await installTorii(toriiPath, toriiVersion);
-      normalLog("torii installed");
+      sendInfoNotification("Torii installed on version " + toriiVersion);
 
       if (!fs.existsSync(toriiPath)) {
         throw new Error(
-          `Torii executable not found at expected path: ${toriiPath}`,
+          `Torii executable not found at expected path: ${toriiPath}`
         );
       }
-    } catch (error) {
-      errorLog(`Failed to install Torii: ${error.message}`);
-      sendNotification({
-        type: NotificationType.Error,
-        message: `Torii installation failed: ${error.message}`,
-        timestampMs: Date.now(),
-      });
+    } else {
+      const versionArgs = ["--version"];
+      const versionResult = spawn.sync(toriiPath, versionArgs);
+      const currentVersion = `v${versionResult.stdout.toString().replace(/torii/g, "").replace(/\s+/g, "")}`;
 
-      await timeout(10000);
-      return handleTorii(toriiVersion);
+      if (currentVersion !== toriiVersion) {
+        normalLog(`Updating torii from ${currentVersion} to ${toriiVersion}`);
+        await installTorii(toriiPath, toriiVersion);
+        sendInfoNotification("Torii updated to version " + toriiVersion);
+      }
     }
-  } else {
-    const versionArgs = ["--version"];
-    const versionResult = spawn.sync(toriiPath, versionArgs);
-    const currentVersion = `v${versionResult.stdout.toString().replace(/torii/g, "").replace(/\s+/g, "")}`;
+  } catch (error) {
+    errorLog(`Failed to install Torii: ${error.message}`);
+    sendErrorNotification(`Failed to install Torii: ${error.message}`);
 
-    if (currentVersion !== toriiVersion) {
-      normalLog(`Updating torii from ${currentVersion} to ${toriiVersion}`);
-      await installTorii(toriiPath, toriiVersion);
-      normalLog("torii updated");
-    }
+    await timeout(10000);
+    return handleTorii(toriiVersion);
   }
 
   while (true) {
@@ -321,7 +316,7 @@ async function handleTorii(toriiVersion: string) {
       mkdirSync(dbPath, { recursive: true });
 
       normalLog(
-        `Launching torii with params:\n- network ${config.configType}\n- rpc ${config.rpc}\n- world address ${config.world_address}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
+        `Launching torii with params:\n- network ${config.configType}\n- rpc ${config.rpc}\n- world address ${config.world_address}\n- db ${dbPath}\n- config ${toriiTomlPath}`
       );
 
       startSyncLoop();
@@ -342,20 +337,16 @@ async function handleTorii(toriiVersion: string) {
         {
           detached: true,
           stdio: ["ignore", "pipe", "pipe"],
-        },
+        }
       );
 
       child.stdout.on("data", (data: Buffer) => {
-        // normalLog(`Torii stdout: ${data.toString()}`);
+        normalLog(`Torii stdout: ${data.toString()}`);
       });
 
       child.stderr.on("data", (data: Buffer) => {
         // errorLog(`Torii stderr: ${data.toString()}`);
-        sendNotification({
-          type: NotificationType.Error,
-          message: data.toString(),
-          timestampMs: Date.now(),
-        });
+        sendErrorNotification(data.toString());
       });
 
       let firstPass = true;
@@ -363,7 +354,7 @@ async function handleTorii(toriiVersion: string) {
       await new Promise<void>((resolve) => {
         child?.on("exit", (code, signal) => {
           errorLog(
-            `Torii process exited with code ${code} and signal ${signal}`,
+            `Torii process exited with code ${code} and signal ${signal}`
           );
           resolve();
         });
@@ -376,11 +367,7 @@ async function handleTorii(toriiVersion: string) {
       if (child) {
         if (firstPass) {
           normalLog("Torii is running");
-          sendNotification({
-            type: NotificationType.Info,
-            message: "Torii on " + config.configType,
-            timestampMs: Date.now(),
-          });
+          sendInfoNotification("Torii on " + config.configType);
           firstPass = false;
         }
 
@@ -389,11 +376,9 @@ async function handleTorii(toriiVersion: string) {
 
         if (exitCode !== 0 && exitCode !== 137) {
           errorLog(`Torii exited with code ${exitCode}`);
-          sendNotification({
-            type: NotificationType.Error,
-            message: `Torii exited with code ${exitCode}. Check console for details.`,
-            timestampMs: Date.now(),
-          });
+          sendErrorNotification(
+            `Torii exited with code ${exitCode}. Check console for details.`
+          );
         }
       }
 
@@ -401,11 +386,7 @@ async function handleTorii(toriiVersion: string) {
       await timeout(5000);
     } catch (error) {
       errorLog(`Error in handleTorii: ${error}`);
-      sendNotification({
-        type: NotificationType.Error,
-        message: `Torii error: ${error}`,
-        timestampMs: Date.now(),
-      });
+      sendErrorNotification(`Torii error: ${error}`);
       await timeout(3000);
     } finally {
       stopSyncLoop();
@@ -437,7 +418,7 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
         : "Unknown error";
       errorLog(`Windows download failed: ${errorMsg}`);
       throw new Error(
-        `Download failed with code ${result.status}: ${errorMsg}`,
+        `Download failed with code ${result.status}: ${errorMsg}`
       );
     }
 
@@ -455,7 +436,7 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
         : "Unknown error";
       errorLog(`Windows extraction failed: ${errorMsg}`);
       throw new Error(
-        `Extraction failed with code ${extractResult.status}: ${errorMsg}`,
+        `Extraction failed with code ${extractResult.status}: ${errorMsg}`
       );
     }
 
@@ -473,17 +454,13 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
         : "Unknown error";
       errorLog(`Unix installation failed: ${errorMsg}`);
       throw new Error(
-        `Unix installation failed with code ${result.status}: ${errorMsg}`,
+        `Unix installation failed with code ${result.status}: ${errorMsg}`
       );
     }
   }
 
   normalLog("Torii installation completed successfully");
-  sendNotification({
-    type: NotificationType.Info,
-    message: `Torii ${toriiVersion} installed successfully`,
-    timestampMs: Date.now(),
-  });
+  sendInfoNotification(`Torii ${toriiVersion} installed successfully`);
 }
 
 function killTorii() {
@@ -508,11 +485,7 @@ function killTorii() {
     }
   } catch (error) {
     errorLog(`Error killing Torii processes: ${error}`);
-    sendNotification({
-      type: NotificationType.Error,
-      message: `Failed to kill Torii processes: ${error}`,
-      timestampMs: Date.now(),
-    });
+    sendErrorNotification(`Failed to kill Torii processes: ${error}`);
   } finally {
     child = null;
     warningLog("Torii processes killed");
@@ -521,7 +494,7 @@ function killTorii() {
 
 async function resetFirstBlock(
   firstBlock: number | null,
-  force: boolean = false,
+  force: boolean = false
 ) {
   const stateFilePath = getStateFilePath(config.configType);
   const state = await fsPromises.readFile(stateFilePath, "utf8");
@@ -530,7 +503,7 @@ async function resetFirstBlock(
     stateJson.firstBlock = firstBlock;
     fs.writeFileSync(
       getStateFilePath(config.configType),
-      JSON.stringify(stateJson),
+      JSON.stringify(stateJson)
     );
   }
   initialToriiBlock = firstBlock;
@@ -544,7 +517,7 @@ async function readFirstBlock() {
     warningLog("State file does not exist, creating...");
     await fsPromises.writeFile(
       stateFilePath,
-      JSON.stringify({ firstBlock: null }),
+      JSON.stringify({ firstBlock: null })
     );
   }
 
@@ -557,12 +530,8 @@ async function readFirstBlock() {
   return stateJson.firstBlock;
 }
 
-async function sendNotification(notification: Notification) {
-  window?.webContents.send(IpcMethod.Notification, notification);
-}
-
 const getChainCurrentBlock = async (
-  currentConfig: ToriiConfig,
+  currentConfig: ToriiConfig
 ): Promise<number> => {
   if (!currentConfig?.rpc) {
     warningLog("RPC config not available for fetching chain block.");
@@ -577,38 +546,34 @@ const getChainCurrentBlock = async (
     return block;
   } catch (error) {
     errorLog(`Error fetching chain current block: ${error}`);
-    sendNotification({
-      type: NotificationType.Error,
-      message: `Failed to get chain block: ${error.message || error}`,
-      timestampMs: Date.now(),
-    });
+    sendErrorNotification(
+      `Failed to get chain block: ${error.message || error}`
+    );
     return 0;
   }
 };
 
 const getToriiCurrentBlock = async (): Promise<number> => {
-  try {
-    const sqlQuery =
-      "SELECT head FROM contracts WHERE contract_type = 'WORLD' LIMIT 1;";
-    const url = new URL("sql", "http://localhost:8080");
-    url.searchParams.set("query", sqlQuery);
+  const sqlQuery = "SELECT MAX(head) FROM contracts;";
+  const url = new URL("sql", "http://localhost:8080");
+  url.searchParams.set("query", sqlQuery);
 
-    const response = await fetch(url, {
-      method: "GET",
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    console.log("torii current block", data);
-    if (!data || data.length === 0 || typeof data[0]?.head !== "number") {
-      throw new Error("Invalid response format from Torii SQL endpoint");
-    }
-    return data[0].head;
-  } catch (error) {
-    errorLog(`Error getting torii current block: ${error}`);
-    return 0;
+  const response = await fetch(url, {
+    method: "GET",
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
+  const data = await response.json();
+  console.log("torii current block", data);
+  if (
+    !data ||
+    data.length === 0 ||
+    typeof data[0]?.["MAX(head)"] !== "number"
+  ) {
+    throw new Error("Invalid response format from Torii SQL endpoint");
+  }
+  return data[0]["MAX(head)"];
 };
 
 async function syncAndSendProgress() {
@@ -644,6 +609,7 @@ async function syncAndSendProgress() {
     }
   } catch (error) {
     errorLog(`Error during sync/progress update: ${error}`);
+    sendErrorNotification(`Error during sync/progress update: ${error}`);
   }
 }
 
@@ -664,14 +630,14 @@ const calculateProgress = () => {
   ) {
     progress = 1;
   }
-  return progress;
+  console.log("progress", progress);
+  return Math.floor(progress * 100);
 };
 
 function startSyncLoop() {
   if (progressInterval) {
     clearInterval(progressInterval);
   }
-  syncAndSendProgress();
   progressInterval = setInterval(syncAndSendProgress, SYNC_INTERVAL);
 }
 
@@ -685,24 +651,32 @@ function stopSyncLoop() {
 
 const setTrayProgress = (progress: number) => {
   if (tray) {
-    tray.setTitle(`${Math.ceil(progress * 100).toString() ?? "0"}%`);
+    tray.setTitle(`${progress.toString() ?? "0"}%`);
   }
 };
 
 app.on("browser-window-focus", function () {
-  globalShortcut.register("CommandOrControl+R", () => {
-    console.log("CommandOrControl+R is pressed: Shortcut Disabled");
-  });
-  globalShortcut.register("CommandOrControl+Shift+R", () => {
-    console.log("CommandOrControl+Shift+R is pressed: Shortcut Disabled");
-  });
-  globalShortcut.register("F5", () => {
-    console.log("F5 is pressed: Shortcut Disabled");
-  });
+  try {
+    globalShortcut.register("CommandOrControl+R", () => {
+      console.log("CommandOrControl+R is pressed: Shortcut Disabled");
+    });
+    globalShortcut.register("CommandOrControl+Shift+R", () => {
+      console.log("CommandOrControl+Shift+R is pressed: Shortcut Disabled");
+    });
+    globalShortcut.register("F5", () => {
+      console.log("F5 is pressed: Shortcut Disabled");
+    });
+  } catch (error) {
+    sendErrorNotification("Failed to register shortcuts: " + error);
+  }
 });
 
 app.on("browser-window-blur", function () {
-  globalShortcut.unregister("CommandOrControl+R");
-  globalShortcut.unregister("CommandOrControl+Shift+R");
-  globalShortcut.unregister("F5");
+  try {
+    globalShortcut.unregister("CommandOrControl+R");
+    globalShortcut.unregister("CommandOrControl+Shift+R");
+    globalShortcut.unregister("F5");
+  } catch (error) {
+    sendErrorNotification("Failed to unregister shortcuts: " + error);
+  }
 });
