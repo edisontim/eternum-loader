@@ -43,13 +43,13 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: eternum-loader-macos-arm64
+          name: eternum-loader-macos-zip
           path: |
             ./out/make/zip/darwin/arm64/Eternum\ Loader-darwin-arm64-${{ env.VERSION }}.zip
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: eternum-loader-macos-arm64
+          name: eternum-loader-macos-arm64-installer
           path: |
             ./out/make/Eternum\ Loader.dmg
 
