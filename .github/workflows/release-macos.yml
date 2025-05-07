@@ -6,13 +6,15 @@ permissions:
 on:
   workflow_dispatch:
 
+env:
+  VERSION: 0.0.5
+
 jobs:
   build:
     strategy:
       matrix:
         os: [
             { name: "macos", image: "macos-latest" },
-            { name: "macos-intel", image: "macos-13" },
           ]
     runs-on: ${{ matrix.os.image }}
     steps:
@@ -41,13 +43,13 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dmg
+          name: eternum-loader-macos-arm64.zip
           path: |
-            ./out/make/Eternum\ Loader.zip
+            ./out/make/zip/darwin/arm64/Eternum\ Loader-darwin-arm64-${{ env.VERSION }}.zip
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dmg
+          name: eternum-loader-macos-arm64.dmg
           path: |
             ./out/make/Eternum\ Loader.dmg
 
