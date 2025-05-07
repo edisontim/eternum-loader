@@ -443,9 +443,12 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
     await fsPromises.rm(tempDir, { recursive: true, force: true });
   } else {
     normalLog("Installing Torii on Unix-based system...");
+    const dojoupExecutable = osUtils.getExecutableName("dojoup");
+    const dojoupPath = path.join(DOJO_PATH, "dojoup", dojoupExecutable);
+
     const result = spawn.sync("sh", [
       "-c",
-      `curl -L https://install.dojoengine.org | bash && dojoup -v ${toriiVersion}`,
+      `curl -L https://install.dojoengine.org | bash && ${dojoupPath} install ${toriiVersion}`,
     ]);
 
     if (result.status !== 0) {
