@@ -10,6 +10,8 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
+    "clean": "git clean -fdX && pnpm store prune",
+    "ci": "pnpm clean && pnpm i",
     "format:check": "pnpm prettier --check .",
     "format:fix": "pnpm prettier --write ."
   },
