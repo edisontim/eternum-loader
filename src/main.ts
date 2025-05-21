@@ -345,8 +345,16 @@ async function handleTorii(toriiVersion: string) {
       });
 
       child.stderr.on("data", (data: Buffer) => {
-        // errorLog(`Torii stderr: ${data.toString()}`);
-        sendErrorNotification(data.toString());
+        const message = data.toString();
+        if (
+          message.toLowerCase().includes("error") ||
+          message.toLowerCase().includes("failed")
+        ) {
+          errorLog(`Torii stderr: ${message}`);
+          sendErrorNotification(message);
+        } else {
+          normalLog(`Torii stderr: ${message}`);
+        }
       });
 
       let firstPass = true;
