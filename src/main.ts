@@ -448,7 +448,7 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
 
     const result = spawn.sync("sh", [
       "-c",
-      `curl -L https://install.dojoengine.org | bash && ${dojoupPath} install ${toriiVersion}`,
+      `curl -L https://install.dojoengine.org | bash && ${dojoupPath} component add torii ${toriiVersion}`,
     ]);
 
     if (result.status !== 0) {
